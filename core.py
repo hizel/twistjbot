@@ -70,33 +70,50 @@ class Bot(object):
     def initFailed(self, stream):
         debug('init error (%s)' % stream)
 
-    def gotMessage(self, element):
-        debug('got message %s', element.toXml())
+    def gotMessage(self, e):
+        debug('got message %s', e.toXml())
+        body = ''
+        for t in e.elements():
+            if t.name == "body":
+                body = t.__str__()
+                break
+        if body != '':
+            self.sendMsg(e['from'], body)
 
-    def gotPresence(self, element):
-        debug('got presence %s', element.toXml())
-        if 'type' in element.attributes:
-            t = element.attributes['type']
+    def sendMsg(self, to, msg):
+        message = domish.Element(('jabber:client','message'))
+        message['from'] = self.me
+        message['to']   = to
+        message['type'] = 'chat'
+        message.addElement("body", "jabber:client", msg)
+        xmlmsg = message.toXml().strip()
+        debug('sended message >>> %s' % xmlmsg)
+        self.stream.send(xmlmsg)
+
+    def gotPresence(self, e):
+        debug('got presence %s', e.toXml())
+        if 'type' in e.attributes:
+            t = e.attributes['type']
             if t == 'subscribe':
                 self.stream.send(domish.Element(('jabber:client', 'presence'),
                     attribs= {
                         'from' : self.me,
-                        'to'   : element.attributes['from'],
+                        'to'   : e.attributes['from'],
                         'type' : 'subscribed'
                         }))
             if t == 'unavailable':
                 self.stream.send(domish.Element(('jabber:client', 'presence'),
                     attribs= {
                         'from' : self.me,
-                        'to'   : element.attributes['from'],
+                        'to'   : e.attributes['from'],
                         'type' : 'unsubscribed'
                         }))
 
-    def gotIq(self, element):
-        debug('got presence %s', element.toXml())
+    def gotIq(self, e):
+        debug('got presence %s', e.toXml())
 
-    def gotSomething(self, element):
-        debug('got something %s', element.toXml())
+    def gotSomething(self, e):
+        debug('got something %s', e.toXml())
 
 def main():
     parser = OptionParser("usage: %prog [options] config.file")
