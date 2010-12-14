@@ -38,6 +38,7 @@ class Bot(object):
 
 
         self.commands = {}
+        self.users = set(config.get('bot', 'users').split(','))
         self._loadPlugins()
 
         self.jid = jid.JID(self.me)
@@ -87,10 +88,19 @@ class Bot(object):
     def initFailed(self, stream):
         debug('init error (%s)' % stream)
 
+    def _allowuser(self, u):
+        j = jid.JID(u)
+        if j.userhostJID().full() in self.users:
+            return True
+        return False
+
     def gotMessage(self, e):
         debug('got message %s', e.toXml())
+        if not self._allowuser(e['from']):
+            self.sendMsg(e['from'], 'Who\'s there?')
+            return
         body = ''.join([''.join(x.children) for x in e.elements() if x.name == 'body'])
-        if body != '':
+        if body != '' :
             com = body.split()
             info('execute for command %s(%s) in %s' % (com[0], type(com[0]), self.commands))
             if com[0] not in self.commands:
