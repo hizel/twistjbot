@@ -60,6 +60,8 @@ class Bot(object):
                     pluginstmp=__import__('plugins.'+plugin_name)
                     plugin = getattr(pluginstmp,plugin_name)
                     commands = plugin.init()
+                    info('load plugin %s with commands %s' % (plugin_name,
+                        commands))
                     for c in commands:
                         self.commands.update({c : plugin})
 
