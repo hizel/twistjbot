@@ -7,14 +7,29 @@ from os.path import isfile
 
 from twisted.words.protocols.jabber import client, jid, xmlstream
 from twisted.internet import reactor
-from twisted.python.log import msg, err
+from twisted.python.log import PythonLoggingObserver, startLogging
+from logging import basicConfig, DEBUG, debug, error, info
+
+class NoOpTwistedLogger:
+    def flush(self):
+        pass
+    def write(self, x):
+        pass
 
 class Bot(object):
     def __init__(self, config):
         self.config = config
 
+        PythonLoggingObserver().start()
+        startLogging(NoOpTwistedLogger(), setStdout=False)
+
         if config.getboolean('bot', 'debug'):
-            self.debug = True
+            basicConfig(level=DEBUG, format='%(asctime)s %(levelname)s \
+                    %(message)s')
+        else:
+            basicConfig(level=INFO, format='%(asctime)s %(levelname)s \
+                    %(message)s')
+
 
         self.jid = jid.JID(u'%s/%s' % (config.get('bot','jid'),
             config.get('bot','resource')))
@@ -25,24 +40,25 @@ class Bot(object):
         self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnected)
         self.factory.addBootstrap(xmlstream.STREAM_AUTHD_EVENT, self.authenticated)
         self.factory.addBootstrap(xmlstream.INIT_FAILED_EVENT, self.initFailed)
-        reactor.connectTCP(self.config.get('bot','server'),
+        self.reactor = reactor
+        self.reactor.connectTCP(self.config.get('bot','server'),
                 self.config.getint('bot','port'), self.factory)
-        reactor.run()
+        self.reactor.run()
 
     def connected(self, stream):
         self.stream = stream
-        msg('connected')
+        debug('connected')
 
     def disconnected(self, stream):
         self.stream = None
-        msg('disconnected')
+        debug('disconnected')
 
     def authenticated(self, stream):
-        msg('authenticated')
+        debug('authenticated')
         self.stream = stream
 
     def initFailed(self, stream):
-        err('init error (%s)' % stream)
+        debug('init error (%s)' % stream)
 
 def main():
     parser = OptionParser("usage: %prog [options] config.file")
@@ -60,9 +76,6 @@ def main():
     config.read(args[0])
 
     bot = Bot(config)
-
-
-
 
 if __name__ == "__main__":
     main()
