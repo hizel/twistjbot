@@ -11,6 +11,8 @@ from twisted.python.log import PythonLoggingObserver, startLogging
 from twisted.words.xish import domish
 from logging import basicConfig, DEBUG, debug, error, info
 
+import os
+
 class NoOpTwistedLogger:
     def flush(self):
         pass
@@ -35,8 +37,10 @@ class Bot(object):
                              config.get('bot', 'resource'))
 
 
-        self.jid = jid.JID(self.me)
+        self.commands = {}
+        self._loadPlugins()
 
+        self.jid = jid.JID(self.me)
         self.factory = client.XMPPClientFactory(self.jid,
                 self.config.get('bot','pass'))
         self.factory.addBootstrap(xmlstream.STREAM_CONNECTED_EVENT, self.connected)
@@ -47,6 +51,17 @@ class Bot(object):
         self.reactor.connectTCP(self.config.get('bot','server'),
                 self.config.getint('bot','port'), self.factory)
         self.reactor.run()
+
+    def _loadPlugins(self):
+        for fname in os.listdir('plugins/'):
+            if fname.endswith('.py'):
+                plugin_name = fname[:-3]
+                if plugin_name != '__init__':
+                    pluginstmp=__import__('plugins.'+plugin_name)
+                    plugin = getattr(pluginstmp,plugin_name)
+                    commands = plugin.init()
+                    for c in commands:
+                        self.commands.update({c : plugin})
 
     def connected(self, stream):
         self.stream = stream
@@ -72,13 +87,17 @@ class Bot(object):
 
     def gotMessage(self, e):
         debug('got message %s', e.toXml())
-        body = ''
-        for t in e.elements():
-            if t.name == "body":
-                body = t.__str__()
-                break
+        body = ''.join([''.join(x.children) for x in e.elements() if x.name == 'body'])
         if body != '':
-            self.sendMsg(e['from'], body)
+            com = body.split()
+            info('execute for command %s(%s) in %s' % (com[0], type(com[0]), self.commands))
+            if com[0] not in self.commands:
+                self.sendMsg(e['from'], 'unknown command')
+            else:
+                p = self.commands[com[0]]
+                c = com[0]
+                ec = getattr(p, c)
+                ec(self, e['from'], com[1:])
 
     def sendMsg(self, to, msg):
         message = domish.Element(('jabber:client','message'))
