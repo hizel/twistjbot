@@ -23,15 +23,35 @@ class Bot(object):
     def __init__(self, config):
         self.config = config
 
+        if config.getboolean('bot', 'daemon'):
+            from daemonize import become_daemon
+            import fcntl
+            self.logfile = config.get('daemon', 'logfile', '')
+            if config.getboolean('bot', 'debug'):
+                basicConfig(level=DEBUG, format='%(asctime)s %(levelname)s \
+                        %(message)s', filename=self.logfile)
+            else:
+                basicConfig(level=INFO, format='%(asctime)s %(levelname)s \
+                        %(message)s', filename=self.logfile)
+            become_daemon()
+            try:
+                self.pidfile = open(config.get('daemon', 'pidfile'), 'w')
+                fcntl.lockf(self.pidfile, fcntl.LOCK_EX|fcntl.LOCK_NB)
+                self.pidfile.write('%s' % (os.getpid()))
+                self.pidfile.flush()
+            except Exception, e:
+                error('error create pid file %s' % str(e))
+
+        else:
+            if config.getboolean('bot', 'debug'):
+                basicConfig(level=DEBUG, format='%(asctime)s %(levelname)s \
+                        %(message)s')
+            else:
+                basicConfig(level=INFO, format='%(asctime)s %(levelname)s \
+                        %(message)s')
+
         PythonLoggingObserver().start()
         startLogging(NoOpTwistedLogger(), setStdout=False)
-
-        if config.getboolean('bot', 'debug'):
-            basicConfig(level=DEBUG, format='%(asctime)s %(levelname)s \
-                    %(message)s')
-        else:
-            basicConfig(level=INFO, format='%(asctime)s %(levelname)s \
-                    %(message)s')
 
         self.me = u'%s/%s' % (config.get('bot', 'jid'),
                              config.get('bot', 'resource'))
@@ -108,7 +128,7 @@ class Bot(object):
             com = body.split()
             info('execute for command %s(%s) in %s' % (com[0], type(com[0]), self.commands))
             if com[0] not in self.commands:
-                self.sendMsg(e['from'], 'unknown command')
+                self.sendMsg(e['from'], 'fuck you :-)')
             else:
                 p = self.commands[com[0]]
                 c = com[0]
