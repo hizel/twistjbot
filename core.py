@@ -126,7 +126,8 @@ class Bot(object):
         body = ''.join([''.join(x.children) for x in e.elements() if x.name == 'body'])
         if body != '' :
             com = body.split()
-            info('execute for command %s(%s) in %s' % (com[0], type(com[0]), self.commands))
+            j = jid.JID(e['from'])
+            info('%s execute command %s' % (j.userhostJID().full(),com[0]))
             if com[0] not in self.commands:
                 self.sendMsg(e['from'], 'fuck you :-)')
             else:
