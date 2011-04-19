@@ -39,6 +39,10 @@ class Bot(object):
 
         self.commands = {}
         self.users = set(config.get('bot', 'users').split(','))
+        self.ping_command    = config.get('commands', 'ping', '/bin/ping')
+        self.arp_command     = config.get('commands', 'arp', '/usr/sbin/arp')
+        self.netstat_command = config.get('commands', 'netstat', '/usr/bin/netstat')
+        self.ifconfig_command = config.get('commands', 'ifconfig', '/sbin/ifconfig')
         self._loadPlugins()
 
         self.jid = jid.JID(self.me)
