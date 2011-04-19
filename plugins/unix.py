@@ -11,12 +11,20 @@ class MyP(protocol.ProcessProtocol):
         debug('connect to terminal')
         pass
     def outReceived(self, data):
-        self.bot.sendMsg(self.to, data)
+        self.bot.sendMsg(self.to, data.rstrip())
 
 def init():
     return (u'ping', ) 
 
-def ping(bot, to, a):
+def ping(bot, to, arg):
     p = MyP(bot, to)
-    debug('%s %s' % (a[0],type(a[0])))
-    bot.reactor.spawnProcess(p, '/bin/ping', args=['ping', '-c 5', a[0]])
+
+    if len(arg) < 1:
+        bot.sendMsg(to, 'ping <host> <num>')
+    else:
+        ip = arg[0]
+        if len(arg) > 1:
+            num = int(arg[1])
+        else:
+            num = 5
+        bot.reactor.spawnProcess(p, '/bin/ping', args=['ping', '-c', str(num), ip])
