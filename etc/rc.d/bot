@@ -1,0 +1,32 @@
+#!/bin/sh
+
+#
+# PROVIDE: bot
+# REQUIRE: netif routing
+# KEYWORD: shutdown 
+# 
+# Add the following line to /etc/rc.conf.local or /etc/rc.conf
+# to enable supervisord: 
+#
+# bot_enable="YES" 
+# 
+
+. /etc/rc.subr
+
+name="bot"
+rcvar=`set_rcvar`
+
+command="/usr/local/bot/core.py"
+command_interpreter="python"
+pidfile="/var/run/bot/${name}.pid"
+
+load_rc_config $name 
+
+: ${bot_enable="NO"} 
+: ${bot_flags="/usr/local/bot/bot.ini"}
+: ${bot_user="bot"}
+: ${bot_group="bot"}
+: ${bot_chdir="/usr/local/bot/"}
+
+run_rc_command "$1"
+

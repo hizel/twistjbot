@@ -9,7 +9,7 @@ from twisted.words.protocols.jabber import client, jid, xmlstream
 from twisted.internet import reactor
 from twisted.python.log import PythonLoggingObserver, startLogging
 from twisted.words.xish import domish
-from logging import basicConfig, DEBUG, debug, error, info
+from logging import basicConfig, DEBUG, INFO, debug, error, info
 
 import os
 
